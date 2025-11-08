@@ -27,19 +27,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _onSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
-    final email = _emailCtrl.text.trim();
-    final password = _passwordCtrl.text.trim();
+  if (!_formKey.currentState!.validate()) return;
 
-    await ref.read(authNotifierProvider.notifier).login(email: email, password: password);
-    final state = ref.read(authNotifierProvider);
-    if (state.auth != null) {
-      // Navigate to dashboard (make sure route exists)
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/dashboard');
-      }
-    }
+  final email = _emailCtrl.text.trim();
+  final password = _passwordCtrl.text.trim();
+  final notifier = ref.read(authNotifierProvider.notifier);
+
+  await notifier.login(email: email, password: password);
+
+  final state = ref.read(authNotifierProvider);
+
+  if (state.auth != null && mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Login successful!')),
+    );
+    Navigator.of(context).pushReplacementNamed('/home');
+  } else if (state.error != null && mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(state.error!)),
+    );
   }
+}
+
 
   Future<void> _onGoogle() async {
     final url = Uri.parse('$API_URL/auth/google');
@@ -58,7 +67,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding:EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20, 
+              ),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),

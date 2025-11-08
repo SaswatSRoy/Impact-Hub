@@ -1,10 +1,9 @@
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import '../repository/auth_repository.dart';
 import '../models/auth_response.dart';
-import '../providers.dart'; // contains authRepositoryProvider
+import '../providers.dart';
 
-/// Represents the state of authentication throughout the app.
 class AuthState {
   final bool isLoading;
   final String? error;
@@ -33,68 +32,72 @@ class AuthState {
   factory AuthState.initial() => const AuthState();
 }
 
-/// A [StateNotifier] responsible for handling authentication logic such as
-/// login, logout, and maintaining the current [AuthState].
 class AuthNotifier extends StateNotifier<AuthState> {
   final Ref _ref;
 
   AuthNotifier(this._ref) : super(AuthState.initial());
 
-  /// Logs the user in with [email] and [password].
-  ///
-  /// It calls the [AuthRepository.login] method and updates the state
-  /// accordingly. Handles [DioException] gracefully with user-friendly messages.
+  // ================================
+  // LOGIN
+  // ================================
   Future<void> login({
     required String email,
     required String password,
   }) async {
-    // Set loading state
     state = state.copyWith(isLoading: true, error: null);
-
     final repo = _ref.read(authRepositoryProvider);
 
     try {
       final res = await repo.login(email: email, password: password);
-      state = state.copyWith(
-        isLoading: false,
-        auth: res,
-        error: null,
-      );
+      state = state.copyWith(isLoading: false, auth: res);
     } on DioException catch (e) {
-      String message = 'Unable to sign in. Please try again.';
-
-      if (e.response?.data is Map) {
-        final data = e.response!.data as Map;
-        if (data['message'] != null) message = data['message'].toString();
-      } else if (e.message != null) {
-        message = e.message!;
-      }
-
-      state = state.copyWith(isLoading: false, error: message);
-    } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: e.response?.data['message'] ?? e.message ?? 'Login failed',
       );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  /// Logs out the current user and clears all stored authentication data.
+  // ================================
+  // REGISTER
+  // ================================
+  Future<void> register({
+  required String name,
+  required String email,
+  required String password,
+  String? location,
+}) async {
+  state = state.copyWith(isLoading: true, error: null);
+  final repo = _ref.read(authRepositoryProvider);
+
+  try {
+    final res = await repo.register(
+      name: name,
+      email: email,
+      password: password,
+      location: location,
+    );
+    state = state.copyWith(isLoading: false, auth: res, error: null);
+  } on DioException catch (e) {
+    String message = 'Registration failed. Please try again.';
+    if (e.response?.data is Map && e.response!.data['message'] != null) {
+      message = e.response!.data['message'].toString();
+    }
+    state = state.copyWith(isLoading: false, error: message);
+  } catch (e) {
+    state = state.copyWith(isLoading: false, error: e.toString());
+  }
+}
+
+
   Future<void> logout() async {
     final repo = _ref.read(authRepositoryProvider);
     await repo.logout();
     state = AuthState.initial();
   }
-
-  /// A helper function that can be expanded later to check token validity,
-  /// auto-login, or silent refresh.
-  Future<void> restoreSession() async {
-    // TODO: Implement restore session logic (optional)
-  }
 }
 
-/// Global provider exposing [AuthNotifier] and its [AuthState].
 final authNotifierProvider =
-    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref);
-});
+    StateNotifierProvider<AuthNotifier, AuthState>((ref) => AuthNotifier(ref));

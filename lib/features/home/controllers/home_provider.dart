@@ -6,7 +6,7 @@ import '../../shared/shared_models.dart';
 
 final homeRepositoryProvider = Provider<HomeRepository>((ref) {
   const backendBase = API_URL;
-  return HomeRepository(baseUrl: backendBase, mockMode: true);
+  return HomeRepository(baseUrl: backendBase, mockMode: false);
 });
 
 final featuredEventsProvider = FutureProvider.autoDispose.family<List<EventModel>, int>((ref, limit) async {

@@ -1,18 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'features/auth/ui/login_screen.dart';
 import 'features/auth/ui/register_screen.dart';
 import 'features/auth/ui/forgot_password_screen.dart';
 import 'features/dashboard/ui/dashboard_screen.dart';
-import 'features/home/ui/home_screen.dart';
+import 'features/home/ui/home_screen.dart'; // ensure exists
+import 'features/home/ui/event_details_screen.dart';
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() {
-  runApp(const ProviderScope(child: MyApp()));
+  const storage = FlutterSecureStorage();
+  final token = await storage.read(key: 'access_token');
+  final initialRoute = (token != null && token.isNotEmpty) ? '/home' : '/login';
+
+  runApp(
+    ProviderScope(
+      child: MyApp(initialRoute: initialRoute),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String initialRoute;
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +48,7 @@ class MyApp extends StatelessWidget {
         '/forgot-password': (_) => const ForgotPasswordScreen(),
         '/dashboard': (_) => const DashboardScreen(),
         '/home': (_) => const HomeScreen(),
+        '/event-details': (_) => const EventDetailsScreen(),
       },
     );
   }

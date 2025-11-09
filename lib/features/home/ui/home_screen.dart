@@ -45,7 +45,7 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -105,7 +105,7 @@ class HomeScreen extends ConsumerWidget {
               eventsAsync.when(
                 data: (list) => list.isNotEmpty
                     ? SizedBox(
-                        height: 220,
+                        height: 240,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           separatorBuilder: (_, __) => const SizedBox(width: 8),

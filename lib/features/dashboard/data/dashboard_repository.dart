@@ -98,22 +98,75 @@ class DashboardRepository {
     }
   }
 
-  /// ✅ Join Event endpoint
-  Future<void> joinEvent(String eventId, String token) async {
-    try {
-      final response = await _dio.post(
-        '/events/$eventId/join',
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
+  /// ✅ Join Event endpoint with proper error handling
+Future<void> joinEvent(String eventId, String token) async {
+  try {
+    final response = await _dio.post(
+      '/events/$eventId/join',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        print('✅ Successfully joined event $eventId');
-      } else {
-        throw Exception(response.data['message'] ?? 'Join failed');
-      }
-    } on DioException catch (e, st) {
-      print('❌ Error joining event: ${e.message}\n$st');
-      throw Exception(e.response?.data?['message'] ?? 'Join event failed');
+    if (response.statusCode == 200 && response.data['success'] == true) {
+      print('✅ Successfully joined event $eventId');
+    } else {
+      // Catch backend message if provided
+      final msg = response.data['message'] ?? 'Failed to join event.';
+      throw Exception(msg);
+    }
+
+  } on DioException catch (e, st) {
+    final code = e.response?.statusCode ?? 0;
+    final msg = e.response?.data?['message'] ?? e.message ?? 'Unknown error';
+
+    // ✅ Handle common backend scenarios gracefully
+    if (code == 409) {
+      // Already joined
+      throw Exception('You have already joined this event.');
+    } else if (code == 401) {
+      // Unauthorized
+      throw Exception('Session expired. Please log in again.');
+    } else if (code == 404) {
+      // Event not found
+      throw Exception('Event not found or has been removed.');
+    } else {
+      print('❌ Error joining event ($code): $msg\n$st');
+      throw Exception(msg);
+    }
+  } catch (e, st) {
+    print('⚠️ Unexpected error while joining event: $e\n$st');
+    throw Exception('Something went wrong. Please try again later.');
+  }
+}
+
+Future<void> joinCommunity(String communityId, String token) async {
+  try {
+    final response = await _dio.post(
+      '/communities/$communityId/join',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+
+    if (response.statusCode == 200 && response.data['success'] == true) {
+      print('✅ Successfully joined community $communityId');
+    } else {
+      final msg = response.data['message'] ?? 'Failed to join community.';
+      throw Exception(msg);
+    }
+
+  } on DioException catch (e, st) {
+    final code = e.response?.statusCode ?? 0;
+    final msg = e.response?.data?['message'] ?? e.message ?? 'Unknown error';
+
+    if (code == 409) {
+      throw Exception('You have already joined this community.');
+    } else if (code == 401) {
+      throw Exception('Please log in again.');
+    } else if (code == 404) {
+      throw Exception('Community not found.');
+    } else {
+      
+      throw Exception(msg);
     }
   }
+}
+
 }

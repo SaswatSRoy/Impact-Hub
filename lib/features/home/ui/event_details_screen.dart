@@ -1,62 +1,31 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../auth/controllers/auth_notifier.dart';
-import '../../shared/shared_models.dart';
-import '../../dashboard/controllers/dashboard_provider.dart';
+import 'package:impact_hub/features/shared/shared_models.dart';
+
+import 'package:impact_hub/features/dashboard/controllers/dashboard_controller.dart';
+import 'package:impact_hub/features/auth/controllers/auth_notifier.dart';
 
 class EventDetailsScreen extends ConsumerStatefulWidget {
   const EventDetailsScreen({super.key});
 
   @override
-  ConsumerState<EventDetailsScreen> createState() => _EventDetailsScreenState();
+  ConsumerState<EventDetailsScreen> createState() =>
+      _EventDetailsScreenState();
 }
 
 class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
   bool isJoining = false;
-
-  Future<void> joinEvent(String eventId, String token) async {
-    setState(() => isJoining = true);
-
-    try {
-      final dio = Dio(BaseOptions(
-        baseUrl: 'https://impacthub1.onrender.com',
-        headers: {'Authorization': 'Bearer $token'},
-      ));
-
-      final response = await dio.post('/events/$eventId/join');
-
-      if (response.statusCode == 200 || response.data['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully joined the event 🎉'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Refresh events on dashboard/home
-        ref.invalidate(dashboardEventsProvider);
-      } else {
-        throw Exception(response.data['message'] ?? 'Join failed');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error joining event: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => isJoining = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final event = ModalRoute.of(context)?.settings.arguments as EventModel?;
     final authState = ref.watch(authNotifierProvider);
     final token = authState.auth?.token ?? '';
+    final dashboardState = ref.watch(dashboardControllerProvider);
+    final controller = ref.read(dashboardControllerProvider.notifier);
+    final joined = event != null &&
+        dashboardState.joinedEvents.contains(event.id);
 
     if (event == null) {
       return const Scaffold(
@@ -137,15 +106,16 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
             Center(
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF004D40),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                  backgroundColor:
+                      joined ? Colors.grey : const Color(0xFF004D40),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 40, vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: isJoining
+                onPressed: (isJoining || joined)
                     ? null
-                    : () {
+                    : () async {
                         if (token.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -154,7 +124,28 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                             ),
                           );
                         } else {
-                          joinEvent(event.id, token);
+                          setState(() => isJoining = true);
+                          try {
+                            await controller.joinEvent(event.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text('Joined ${event.title} 🎉'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                          } finally {
+                            if (mounted) setState(() => isJoining = false);
+                          }
                         }
                       },
                 icon: isJoining
@@ -166,9 +157,16 @@ class _EventDetailsScreenState extends ConsumerState<EventDetailsScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : const Icon(Icons.volunteer_activism, color: Colors.white),
+                    : Icon(
+                        joined
+                            ? Icons.check
+                            : Icons.volunteer_activism,
+                        color: Colors.white,
+                      ),
                 label: Text(
-                  isJoining ? 'Joining...' : 'Join Event',
+                  joined
+                      ? 'Joined'
+                      : (isJoining ? 'Joining...' : 'Join Event'),
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
                     color: Colors.white,

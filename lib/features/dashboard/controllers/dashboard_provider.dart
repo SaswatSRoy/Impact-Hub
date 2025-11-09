@@ -19,7 +19,8 @@ final dashboardCommunitiesProvider = FutureProvider.autoDispose.family<List<Comm
   return repo.fetchCommunities(limit: limit);
 });
 
-final dashboardMetricsProvider = FutureProvider.family.autoDispose<MetricsModel, String>((ref, userId) async {
+final dashboardMetricsProvider =
+    FutureProvider.autoDispose.family<MetricsModel, String>((ref, userId) async {
   final repo = ref.read(dashboardRepositoryProvider);
   return repo.fetchUserMetrics(userId);
 });

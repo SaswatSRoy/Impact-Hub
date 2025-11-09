@@ -8,7 +8,6 @@ import 'package:impact_hub/widgets/profile_header.dart';
 import 'package:impact_hub/widgets/impact_summary.dart';
 import 'package:impact_hub/widgets/upcoming_events.dart';
 
-
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -23,9 +22,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final authNotifier = ref.read(authNotifierProvider.notifier);
-    final appUser = authState.auth;
-    final userId = appUser?.userId ?? 'user_1';
+    final appUser = authState.auth?.user;
+    final userId = appUser?.id ?? '';
 
+    // Providers
     final eventsAsync = ref.watch(dashboardEventsProvider(4));
     final metricsAsync = ref.watch(dashboardMetricsProvider(userId));
 
@@ -64,24 +64,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ProfileHeader(
-                name: appUser?.email?.split('@').first ?? 'Guest User',
-                email: appUser?.email ?? 'guest@example.com',
-                onEdit: () => setState(() => showEdit = true),
-              ),
-              const SizedBox(height: 16),
-              QuickActions(),
-              const SizedBox(height: 16),
-              ImpactSummary(metricsAsync: metricsAsync),
-              const SizedBox(height: 18),
-              UpcomingEvents(eventsAsync: eventsAsync),
-            ],
+        child: RefreshIndicator(
+          onRefresh: () async {
+            // Reload metrics and user info when refreshed
+            await ref.read(authNotifierProvider.notifier).fetchCurrentUser();
+            ref.invalidate(dashboardMetricsProvider(userId));
+            ref.invalidate(dashboardEventsProvider(4));
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ✅ Use real name from backend
+                ProfileHeader(
+                  name: appUser?.name ?? 'Guest User',
+                  email: appUser?.email ?? 'guest@example.com',
+                  onEdit: () => setState(() => showEdit = true),
+                ),
+                const SizedBox(height: 16),
+
+                // Quick actions (navigate to events, communities, etc.)
+                const QuickActions(),
+                const SizedBox(height: 16),
+
+                // ✅ Impact summary (points, joined events, etc.)
+                ImpactSummary(metricsAsync: metricsAsync),
+                const SizedBox(height: 18),
+
+                // ✅ Upcoming events
+                UpcomingEvents(eventsAsync: eventsAsync),
+              ],
+            ),
           ),
         ),
       ),

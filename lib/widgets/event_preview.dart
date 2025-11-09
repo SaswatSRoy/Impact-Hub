@@ -4,99 +4,120 @@ import '../features/shared/shared_models.dart';
 
 class EventPreviewCard extends StatelessWidget {
   final EventModel event;
-  final VoidCallback? onTap;
 
-  const EventPreviewCard({
-    super.key,
-    required this.event,
-    this.onTap,
-  });
+  const EventPreviewCard({super.key, required this.event});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    return SizedBox(
+      width: 300,
+      height: 240, // ✅ fixed height to prevent vertical overflow
       child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (event.image != null && event.image!.isNotEmpty)
-              Image.network(
-                event.image!,
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              )
-            else
-              Container(
-                height: 120,
-                width: double.infinity,
-                color: Colors.grey.shade200,
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  color: Colors.grey,
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: const Color(0xFF004D40),
-                    ),
+        elevation: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: InkWell(
+          onTap: () {
+            Navigator.pushNamed(context, '/event-detail', arguments: event);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 🔹 IMAGE
+                SizedBox(
+                  height: 90,
+                  width: double.infinity,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: event.image != null && event.image!.isNotEmpty
+                        ? Image.network(
+                            event.image!,
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            color: Colors.teal.withOpacity(0.15),
+                            child: const Center(
+                              child: Icon(Icons.event, size: 42, color: Colors.teal),
+                            ),
+                          ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
+                ),
+
+                const SizedBox(height: 8),
+
+                // 🔹 TITLE
+                Text(
+                  event.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: const Color(0xFF004D40),
+                  ),
+                ),
+
+                const SizedBox(height: 2),
+
+                // 🔹 DATE
+                Text(
+                  "📅 ${event.startDate.toLocal().toString().substring(0, 10)}",
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700]),
+                ),
+
+                const SizedBox(height: 4),
+
+                // 🔹 DESCRIPTION (limited)
+                Expanded(
+                  child: Text(
                     event.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey[700],
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 12.5, color: Colors.grey[600]),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 13, color: Colors.teal),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${event.startDate.day}/${event.startDate.month}/${event.startDate.year}',
+                ),
+
+                const SizedBox(height: 4),
+
+                // 🔹 PARTICIPANTS + CATEGORY
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.people, size: 16, color: Colors.teal),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${event.participants} joined',
+                          style: GoogleFonts.poppins(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        event.category,
                         style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.teal[800],
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.teal.shade800,
                         ),
                       ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          const Icon(Icons.people, size: 13, color: Colors.teal),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${event.participants}',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.teal[800],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

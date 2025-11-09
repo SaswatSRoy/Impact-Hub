@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'app_user.dart';
 
 part 'auth_response.freezed.dart';
 part 'auth_response.g.dart';
@@ -7,9 +8,8 @@ part 'auth_response.g.dart';
 class AuthResponse with _$AuthResponse {
   const factory AuthResponse({
     required String token,
-    required String userId,
+    required AppUser user,
     String? refreshToken,
-    String? email,
   }) = _AuthResponse;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) =>
